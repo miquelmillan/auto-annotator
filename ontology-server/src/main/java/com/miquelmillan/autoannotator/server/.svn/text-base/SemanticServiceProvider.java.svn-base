@@ -1,0 +1,71 @@
+package net.urv.itaka.autoAnnotator;
+
+import java.io.InputStream;
+import java.io.IOException;
+
+import java.util.Properties;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.xmlrpc.webserver.XmlRpcServlet;
+import org.apache.xmlrpc.*;
+import org.apache.xmlrpc.server.*;
+import org.apache.xmlrpc.metadata.*;
+
+public class SemanticServiceProvider extends XmlRpcServlet {
+   public SemanticServiceProvider() {
+   }
+
+   @Override
+   public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+      String extension = request.getRequestURL().substring(request.getRequestURL().length() - 3);
+      if (extension.compareTo("owl") == 0)
+      {
+    	  String URL[] = request.getRequestURL().toString().split("/");
+    	  String name = URL[URL.length-1];
+    	  java.io.BufferedReader owlFile = new java.io.BufferedReader( new java.io.FileReader (
+    			  					this.getServletContext().getRealPath(java.io.File.separatorChar + "owl"
+    			  					+ java.io.File.separatorChar+ name))
+    	  						);
+    	  try {
+    		String line;
+    		
+    	  	while ((line = owlFile.readLine())!=null)
+    	  		response.getWriter().write(line+"\n");
+    	  	
+    	  	owlFile.close();
+    	  }catch (IOException e) {
+    		  owlFile.close();
+    		  System.out.println("Problems managing the owl file: "+e.getMessage());
+    	  }
+      }	
+      else
+    	  super.doGet(request,response);
+   }
+   
+   @Override
+   public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	  System.out.println("doPost()");
+      super.doPost(request,response);
+   }
+
+   @Override
+   public void init(ServletConfig servletConfig ) throws ServletException {
+      super.init(servletConfig);
+      System.out.println("Startup servlet");
+   }
+
+   @Override
+   public void destroy() {
+      System.out.println("Stopped servlet");
+   }
+
+   
+
+}

@@ -1,0 +1,252 @@
+package net.urv.itaka.autoAnnotator;
+
+import com.hp.hpl.jena.ontology.BooleanClassDescription;
+import com.hp.hpl.jena.ontology.OntDocumentManager;
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntClass;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.ontology.Restriction;
+import com.hp.hpl.jena.rdf.model.*;
+import com.hp.hpl.jena.shared.PrefixMapping;
+import com.hp.hpl.jena.ontology.*;
+import com.hp.hpl.jena.util.iterator.ExtendedIterator; 
+import com.hp.hpl.jena.ontology.impl.OntClassImpl;
+import java.io.*;
+
+public class SemanticServiceHandler {
+	   public SemanticServiceHandler() {}
+
+	   public int getNumberOfClassesFromURI(String URL){
+		   int result=0;
+		   OntModel model = connectURL(URL);
+
+		   ExtendedIterator eit = model.listClasses();
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   
+			   result++;
+		   }
+		   System.out.println("The result is:");
+		   System.out.println(result);
+		   
+		   return result;
+	   }
+	   
+	   public String getClassesFromURL(String URL){
+		   String result="";
+		   OntModel model = connectURL(URL);
+		   int test=0;
+		   ExtendedIterator eit = model.listClasses();
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   if (o.getLocalName() != null)
+			   { //Null name classes are not interesting
+				   test++;
+			       result = result.concat(o.getNameSpace() + "["+o.getLocalName()+"]" + " ");
+		   	   }
+		   }
+		   System.out.println("Total: "+test);
+		   System.out.println("The result is:");
+		   System.out.println(result);
+		   
+		   return result;
+	   }
+
+	   public String getClassAncestorsFromURL(String URL, String localName){
+		   String result="";
+		   OntModel model = connectURL(URL);
+		   ExtendedIterator eit = model.listClasses();
+		   
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   try
+			   {
+			   	   if (o.getLocalName().compareTo(localName)==0)
+				   { //Null name classes are not interesting
+					   ExtendedIterator extit = o.listSuperClasses();
+					   while (extit.hasNext())
+					   {
+						   OntClassImpl o1 = (OntClassImpl)extit.next();
+						   result = result.concat(o1.getNameSpace() + "["+o1.getLocalName()+"]" + " ");
+					   }
+			   	   }
+			   } catch (NullPointerException e){
+				   System.out.println("Detected Null-Named class"); 
+			   }
+		   }
+		   if (result.compareTo("")==0)
+			   result = "Null";
+		   
+		   return result;
+	   }
+
+	   public String getClassDescendantsFromURL(String URL,String localName){
+		   String result="";
+		   OntModel model = connectURL(URL);
+		   ExtendedIterator eit = model.listClasses();
+		   
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   try
+			   {
+			   	   if (o.getLocalName().compareTo(localName)==0)
+				   { //Null name classes are not interesting
+					   System.out.println("Asking " + localName + " Descendants. " + o.listSubClasses().toList().size());
+					   ExtendedIterator extit = o.listSubClasses();
+					   while (extit.hasNext())
+					   {
+						   OntClassImpl o1 = (OntClassImpl)extit.next();
+						   System.out.println("Descendant: " + o1.getLocalName());
+						   result = result.concat(o1.getNameSpace() + "["+o1.getLocalName()+"]" + " ");
+					   }
+			   	   }
+			   } catch (NullPointerException e){
+				   System.err.println("Detected Null-Named class"); 
+			   }
+		   }	
+		   
+		   if (result.compareTo("")==0)
+			   result = "Null";
+		   
+		   return result;
+	   }
+	   
+	   public int getNumberOfClassesFromPath(String path){
+		   int result=0;
+		   OntModel model = connect(path);
+
+		   ExtendedIterator eit = model.listClasses();
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   
+			   result++;
+		   }
+		   System.out.println("The result is:");
+		   System.out.println(result);
+		   
+		   return result;
+	   }
+	   
+	   public String getClassesFromPath(String path){
+		   String result="";
+		   OntModel model = connect(path);
+		   
+		   ExtendedIterator eit = model.listClasses();
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   
+		       result = result.concat(o.getNameSpace() + "["+o.getLocalName()+"]" + " ");
+		   }
+		   System.out.println("The result is:");
+		   System.out.println(result);
+		   
+		   return result;
+	   }
+	   
+	   
+	   public String getClassAncestorsFromPath(String path, String localName){
+		   String result="";
+		   OntModel model = connect(path);
+		   ExtendedIterator eit = model.listClasses();
+		   
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   try
+			   {
+			   	   if (o.getLocalName().compareTo(localName)==0)
+				   { //Null name classes are not interesting
+					   ExtendedIterator extit = o.listSuperClasses();
+					   while (extit.hasNext())
+					   {
+						   OntClassImpl o1 = (OntClassImpl)extit.next();
+						   if (o1.getLocalName().compareTo("")!=0)
+						   		result = result.concat(o1.getNameSpace() + "["+o1.getLocalName()+"]" + " ");					   
+					   }
+			   	   }
+			   } catch (NullPointerException e){
+				   System.err.println("Detected Null-Named class"); 
+			   }
+		   }
+		   
+		   if (result.compareTo("")==0)
+			   result = "Null";
+		   
+		   return result;
+	   }
+	   
+	   public String getClassDescendantsFromPath(String path, String localName){
+		   String result="";
+		   OntModel model = connect(path);
+		   ExtendedIterator eit = model.listClasses();
+		   
+		   while (eit.hasNext())
+		   {
+			   OntClassImpl o = (OntClassImpl)eit.next(); 
+			   try
+			   {
+			   	   if (o.getLocalName().compareTo(localName)==0)
+				   { //Null name classes are not interesting
+					   ExtendedIterator extit = o.listSubClasses();
+					   
+					   while (extit.hasNext())
+					   {
+						   OntClassImpl o1 = (OntClassImpl)extit.next();
+						   if (o1.getLocalName().compareTo("")!=0)
+							   result = result.concat(o1.getNameSpace() + "["+o1.getLocalName()+"]" + " ");					   
+					   }
+			   	   }
+			   } catch (NullPointerException e){
+				   System.err.println("Detected Null-Named class"); 
+			   }
+		   }
+		   
+		   if (result.compareTo("")==0)
+			   result = "Null";
+		   
+		   return result;
+	   }
+	   private OntModel connect(String path)
+	   {
+		   ModelMaker maker = ModelFactory.createMemModelMaker();
+		   OntDocumentManager.getInstance().addAltEntry( "urn:x-hp-jena:test1", "file:///"+path);
+		   //create the helper class we use to handle the persistent ontologies
+		   Model base = maker.createModel( "urn:x-hp-jena:test1", false );
+		
+		   OntModelSpec spec = new OntModelSpec( OntModelSpec.OWL_MEM );
+		   spec.setImportModelMaker( maker );
+		   
+		   OntModel m = ModelFactory.createOntologyModel( spec, base );	
+		   m.read("urn:x-hp-jena:test1");
+				
+		   return (m);
+		}
+	   
+	   private OntModel connectURL(String URL)
+	   {
+		   ModelMaker maker = ModelFactory.createMemModelMaker();
+		   OntDocumentManager.getInstance().addAltEntry( "urn:x-hp-jena:test1", URL);
+		   //create the helper class we use to handle the persistent ontologies
+		   Model base = maker.createModel( "urn:x-hp-jena:test1", false );
+		
+		   OntModelSpec spec = new OntModelSpec( OntModelSpec.OWL_MEM );
+		   spec.setImportModelMaker( maker );
+		   
+		   OntModel m = ModelFactory.createOntologyModel( spec, base );	
+		   m.read("urn:x-hp-jena:test1");
+				
+		   return (m);
+	   }
+	   
+	   public static void main(String[] args){
+		   SemanticServiceHandler s = new SemanticServiceHandler();
+		   
+		   System.out.println(s.getClassAncestorsFromURL("http://localhost:8080/semantic_services/cancer_multilevel_taxo.owl", "leukemia"));
+	   }
+}
